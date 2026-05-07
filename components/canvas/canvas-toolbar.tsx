@@ -6,7 +6,6 @@ import {
   ChevronRight,
   Play,
   Pause,
-  PencilLine,
   LayoutList,
   MessageSquare,
   Volume1,
@@ -85,7 +84,6 @@ export function CanvasToolbar({
   scenesCount,
   engineState,
   isLiveSession,
-  whiteboardOpen,
   sidebarCollapsed,
   chatCollapsed,
   onToggleSidebar,
@@ -93,7 +91,6 @@ export function CanvasToolbar({
   onPrevSlide,
   onNextSlide,
   onPlayPause,
-  onWhiteboardClose,
   showStopDiscussion,
   onStopDiscussion,
   isPresenting,
@@ -113,10 +110,6 @@ export function CanvasToolbar({
   const canGoPrev = currentSceneIndex > 0;
   const canGoNext = currentSceneIndex < scenesCount - 1;
   const showPlayPause = !isLiveSession;
-
-  const whiteboardElementCount = useStageStore(
-    (s) => s.stage?.whiteboard?.[0]?.elements?.length || 0,
-  );
 
   // Volume slider hover state
   const [volumeHover, setVolumeHover] = useState(false);
@@ -373,26 +366,7 @@ export function CanvasToolbar({
             </TooltipProvider>
           )}
 
-          {/* Whiteboard */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onWhiteboardClose();
-            }}
-            className={cn(
-              ctrlBtn,
-              'w-6 h-6',
-              whiteboardOpen
-                ? 'text-violet-600 dark:text-violet-400'
-                : 'text-gray-500 dark:text-gray-400',
-            )}
-            title={whiteboardOpen ? t('whiteboard.minimize') : t('whiteboard.open')}
-          >
-            <PencilLine className="w-3.5 h-3.5" />
-            {!whiteboardOpen && whiteboardElementCount > 0 && (
-              <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-violet-500 dark:bg-violet-400 rounded-full" />
-            )}
-          </button>
+          {/* Whiteboard toggle removed */}
         </div>
       </div>
 

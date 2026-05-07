@@ -19,6 +19,59 @@ import type { AICallFn, GenerationResult, GenerationCallbacks } from './pipeline
 import { createLogger } from '@/lib/logger';
 const log = createLogger('Generation');
 
+function normalizeTextForSignature(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[，。！？、,.!?;:\s]+/g, '')
+    .trim();
+}
+
+function dedupeNearDuplicateOutlines(outlines: SceneOutline[]): SceneOutline[] {
+  const seen = new Set<string>();
+  const result: SceneOutline[] = [];
+
+  for (const outline of outlines) {
+    const title = normalizeTextForSignature(outline.title || '');
+    const keyPoints = (outline.keyPoints || [])
+      .map((p) => normalizeTextForSignature(p))
+      .filter(Boolean)
+      .slice(0, 4)
+      .join('|');
+    const signature = `${title}::${keyPoints}`;
+
+    if (seen.has(signature)) {
+      log.warn(`Dropping near-duplicate outline: "${outline.title}"`);
+      continue;
+    }
+    seen.add(signature);
+    result.push(outline);
+  }
+
+  return result;
+}
+
+function sanitizeRecapWording(text: string): string {
+  return text
+    .replace(/知识检查/g, '阶段小结')
+    .replace(/知识巩固/g, '要点巩固')
+    .replace(/综合知识挑战/g, '综合要点梳理')
+    .replace(/综合测试/g, '综合梳理')
+    .replace(/测试点/g, '要点')
+    .replace(/测验/g, '梳理')
+    .replace(/回顾并回答/g, '回顾并梳理')
+    .replace(/思考并回答/g, '思考并梳理')
+    .replace(/提问/g, '梳理');
+}
+
+function sanitizeOutlineRecapMode(outline: SceneOutline): SceneOutline {
+  return {
+    ...outline,
+    title: sanitizeRecapWording(outline.title || ''),
+    description: sanitizeRecapWording(outline.description || ''),
+    keyPoints: (outline.keyPoints || []).map((p) => sanitizeRecapWording(p)),
+  };
+}
+
 /**
  * Generate scene outlines from user requirements
  * Now uses simplified UserRequirements with just requirement text and language
@@ -146,9 +199,13 @@ export async function generateSceneOutlinesFromRequirements(
 
     // Replace sequential gen_img_N/gen_vid_N with globally unique IDs
    // const result = uniquifyMediaElementIds(enriched);
-    const result = uniquifyMediaElementIds(enriched).map((outline) =>
+    const normalized = uniquifyMediaElementIds(enriched).map((outline) =>
       outline.type === 'slide' ? outline : { ...outline, type: 'slide' as const },
     );
+    const result = dedupeNearDuplicateOutlines(normalized).map((outline, index) => ({
+      ...sanitizeOutlineRecapMode(outline),
+      order: index + 1,
+    }));
 
     callbacks?.onProgress?.({
       currentStage: 1,

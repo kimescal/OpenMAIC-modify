@@ -26,9 +26,9 @@ const log = createLogger('Settings');
 export const PLAYBACK_SPEEDS = [1, 1.25, 1.5, 2] as const;
 export type PlaybackSpeed = (typeof PLAYBACK_SPEEDS)[number];
 
-const COMPANY_LLM_API_URL = 'http://ai-api.citicsinfo.com/v1';
+const COMPANY_LLM_API_URL = process.env.NEXT_PUBLIC_COMPANY_LLM_API_URL || 'http://ai-api.citicsinfo.com/v1';
 const COMPANY_LLM_API_KEY = 'b4f7cada-6a71-4a26-b543-fe8c81498ba6';
-const COMPANY_LLM_MODEL_NAME = 'qwen3.5-397b-local';
+const COMPANY_LLM_MODEL_NAME = process.env.NEXT_PUBLIC_COMPANY_LLM_MODEL_NAME || 'qwen3.5-397b-local';
 
 export interface SettingsState {
   // Model selection
@@ -276,15 +276,17 @@ const getDefaultProvidersConfig = (): ProvidersConfig => {
       isBuiltIn: true,
     };
   });
-  config.qwen = {
-    ...config.qwen,
-    apiKey: COMPANY_LLM_API_KEY,
-    baseUrl: COMPANY_LLM_API_URL,
-    models: [
-      { id: COMPANY_LLM_MODEL_NAME, name: COMPANY_LLM_MODEL_NAME },
-      ...(config.qwen.models || []),
-    ],
-  };
+  if (config.qwen) {
+    config.qwen = {
+      ...config.qwen,
+      apiKey: '',
+      baseUrl: COMPANY_LLM_API_URL,
+      models: [
+        { id: COMPANY_LLM_MODEL_NAME, name: COMPANY_LLM_MODEL_NAME },
+        ...(config.qwen.models || []),
+      ],
+    };
+  }
   return config;
 };
 
@@ -583,9 +585,9 @@ export const useSettingsStore = create<SettingsState>()(
         // Video settings (use defaults)
         ...defaultVideoConfig,
 
-        // Media generation toggles (off by default)
-        imageGenerationEnabled: false,
-        videoGenerationEnabled: false,
+        // Media generation toggles (on by default)
+        imageGenerationEnabled: true,
+        videoGenerationEnabled: true,
 
         // Audio feature toggles (on by default)
         ttsEnabled: true,
@@ -1305,10 +1307,10 @@ export const useSettingsStore = create<SettingsState>()(
 
         // Add default media generation toggles if missing
         if (state.imageGenerationEnabled === undefined) {
-          state.imageGenerationEnabled = false;
+          state.imageGenerationEnabled = true;
         }
         if (state.videoGenerationEnabled === undefined) {
-          state.videoGenerationEnabled = false;
+          state.videoGenerationEnabled = true;
         }
 
         // Add default audio toggles if missing

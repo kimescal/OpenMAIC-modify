@@ -456,6 +456,69 @@ function processLatexElements(
 }
 
 /**
+ * Normalize text elements to avoid question/quiz phrasing on slide pages.
+ * Product mode requires summary/insight style wording instead of interrogatives.
+ */
+function sanitizeQuestionStyleText(elements: PPTElement[]): PPTElement[] {
+  return elements.map((el) => {
+    if (el.type !== 'text' || typeof el.content !== 'string') return el;
+
+    let content = el.content;
+    // Remove explicit "问题1/Question 1" labels
+    content = content
+      .replace(/问题\s*\d+\s*[:：]?\s*/g, '要点：')
+      .replace(/question\s*\d+\s*[:：]?\s*/gi, 'Key Point: ');
+    // Convert quiz/challenge labels to recap style labels
+    content = content
+      .replace(/知识检查/g, '阶段小结')
+      .replace(/综合知识挑战/g, '综合要点梳理')
+      .replace(/综合测试/g, '综合梳理');
+    // Convert interrogative punctuation to declarative punctuation
+    content = content.replace(/[？?]/g, '。');
+
+    return { ...el, content };
+  });
+}
+
+/**
+ * Clamp element boxes into canvas safe area to avoid overflow outside slide viewport.
+ */
+function clampElementsToCanvas(
+  elements: PPTElement[],
+  canvasWidth: number,
+  canvasHeight: number,
+): PPTElement[] {
+  const margin = 50;
+  const maxRight = canvasWidth - margin;
+  const maxBottom = canvasHeight - margin;
+
+  return elements.map((el) => {
+    if (el.type === 'line') return el;
+
+    const box = el as unknown as Record<string, unknown>;
+    const left = typeof el.left === 'number' ? el.left : 0;
+    const top = typeof el.top === 'number' ? el.top : 0;
+    const width = typeof el.width === 'number' ? Math.max(1, el.width) : 1;
+    const height = typeof box.height === 'number' ? Math.max(1, box.height) : 1;
+
+    const next = { ...box };
+
+    // Shrink if element itself is wider/taller than safe area
+    if (width > maxRight - margin) next.width = Math.max(1, maxRight - margin);
+    if (height > maxBottom - margin) next.height = Math.max(1, maxBottom - margin);
+
+    const clampedWidth = typeof next.width === 'number' ? (next.width as number) : width;
+    const clampedHeight = typeof next.height === 'number' ? (next.height as number) : height;
+
+    // Shift position to keep within bounds
+    next.left = Math.min(Math.max(left, margin), maxRight - clampedWidth);
+    next.top = Math.min(Math.max(top, margin), maxBottom - clampedHeight);
+
+    return next as unknown as PPTElement;
+  });
+}
+
+/**
  * Generate slide content
  */
 async function generateSlideContent(
@@ -605,6 +668,8 @@ async function generateSlideContent(
     id: `${el.type}_${nanoid(8)}`,
     rotate: 0,
   })) as PPTElement[];
+  const normalizedElements = sanitizeQuestionStyleText(processedElements);
+  const boundedElements = clampElementsToCanvas(normalizedElements, canvasWidth, canvasHeight);
 
   // Process background
   let background: SlideBackground | undefined;
@@ -620,7 +685,7 @@ async function generateSlideContent(
   }
 
   return {
-    elements: processedElements,
+    elements: boundedElements,
     background,
     remark: generatedData.remark || outline.description,
   };
@@ -1092,9 +1157,17 @@ function formatQuestionsForPrompt(questions: QuizQuestion[]): string {
  */
 function processActions(actions: Action[], elements: PPTElement[], agents?: AgentInfo[]): Action[] {
   const elementIds = new Set(elements.map((el) => el.id));
-  const agentIds = new Set(agents?.map((a) => a.id) || []);
-  const studentAgents = agents?.filter((a) => a.role === 'student') || [];
-  const nonTeacherAgents = agents?.filter((a) => a.role !== 'teacher') || [];
+  const sanitizeSpeech = (text: string): string =>
+    text
+      .replace(/[？?]/g, '。')
+      .replace(/知识检查/g, '阶段小结')
+      .replace(/综合知识挑战/g, '综合要点梳理')
+      .replace(/综合测试/g, '综合梳理')
+      .replace(/测试/g, '梳理')
+      .replace(/挑战/g, '梳理')
+      .replace(/请[你您]?回答[^。]*。?/g, '请关注本页总结要点。')
+      .replace(/回忆并回答[^。]*。?/g, '回顾并梳理本页关键结论。')
+      .replace(/思考并回答[^。]*。?/g, '梳理并归纳本页核心信息。');
 
   return actions.map((action) => {
     // Ensure each action has an ID
@@ -1117,21 +1190,8 @@ function processActions(actions: Action[], elements: PPTElement[], agents?: Agen
       }
     }
 
-    // Validate/fill discussion agentId
-    if (processedAction.type === 'discussion' && agents && agents.length > 0) {
-      if (processedAction.agentId && agentIds.has(processedAction.agentId)) {
-        // agentId valid — keep it
-      } else {
-        // agentId missing or invalid — pick a random student, or non-teacher, or skip
-        const pool = studentAgents.length > 0 ? studentAgents : nonTeacherAgents;
-        if (pool.length > 0) {
-          const picked = pool[Math.floor(Math.random() * pool.length)];
-          log.warn(
-            `Discussion agentId "${processedAction.agentId || '(none)'}" invalid, assigned: ${picked.id} (${picked.name})`,
-          );
-          processedAction.agentId = picked.id;
-        }
-      }
+    if (processedAction.type === 'speech' && typeof processedAction.text === 'string') {
+      processedAction.text = sanitizeSpeech(processedAction.text);
     }
 
     return processedAction;

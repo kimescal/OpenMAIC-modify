@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowUp,
+  BarChart3,  
   Check,
   ChevronDown,
   Clock,
@@ -305,10 +306,8 @@ function HomePage() {
           classrooms.length === 0 ? 'justify-center min-h-[calc(100dvh-8rem)]' : 'mt-[10vh]',
         )}
       >
-        {/* ── Logo ── */}
-        <motion.img
-          src="/logo-horizontal.png"
-          alt="OpenMAIC"
+        {/* ── Brand ── */}
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{
@@ -317,18 +316,13 @@ function HomePage() {
             stiffness: 200,
             damping: 20,
           }}
-          className="h-12 md:h-16 mb-2 -ml-2 md:-ml-3"
-        />
-
-        {/* ── Slogan ── */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.25 }}
-          className="text-sm text-muted-foreground/60 mb-8"
+          className="mb-8 inline-flex items-center gap-3 rounded-2xl border border-border/60 bg-white/70 px-5 py-3 shadow-sm backdrop-blur-sm dark:bg-slate-900/70"
         >
-          {t('home.slogan')}
-        </motion.p>
+          <BarChart3 className="size-9 text-violet-600" />
+          <span className="text-3xl font-semibold tracking-tight text-violet-700 dark:text-violet-300">
+            Financial Research
+          </span>
+        </motion.div>
 
         {/* ── Unified input area ── */}
         <motion.div
@@ -464,11 +458,9 @@ function HomePage() {
           </AnimatePresence>
         </motion.div>
       )}
-
-      {/* Footer — flows with content, at the very end */}
-      <div className="mt-auto pt-12 pb-4 text-center text-xs text-muted-foreground/40">
-        OpenMAIC Open Source Project
-      </div>
+	  
+      {/* Footer spacer */}
+      <div className="mt-auto pt-12 pb-4" />
     </div>
   );
 }

@@ -22,7 +22,7 @@
     "selectProvider": "选择模型服务商",
     "configureProvider": "配置模型",
     "configureProviderHint": "请先配置至少一个模型服务商才能生成课程",
-    "enterClassroom": "进入课堂",
+    "enterClassroom": "进入",
     "advancedSettings": "高级设置",
     "ttsTitle": "语音合成",
     "ttsHint": "选择 AI 教师的朗读音色",
@@ -166,7 +166,7 @@
     "retry": "重新答题"
   },
   "roundtable": {
-    "teacher": "教师",
+    "teacher": "讲解员",
     "you": "你",
     "inputPlaceholder": "输入你的消息...",
     "listening": "录音中...",
@@ -254,7 +254,7 @@
     "notReady": "生成完成后可分享"
   },
   "classroom": {
-    "recentClassrooms": "最近学习",
+    "recentClassrooms": "最近内容",
     "today": "今天",
     "yesterday": "昨天",
     "daysAgo": "天前",
@@ -269,7 +269,7 @@
   "upload": {
     "pdfSizeLimit": "支持最大50MB的PDF文件",
     "generateFailed": "生成课堂失败，请重试",
-    "requirementPlaceholder": "输入你想学的任何内容，例如：\n「从零学 Python，30 分钟写出第一个程序」\n「用白板给我讲解傅里叶变换」\n「阿瓦隆桌游怎么玩」",
+    "requirementPlaceholder": "输入任何你想了解的金融方面的内容",
     "requirementRequired": "请输入课程需求",
     "fileTooLarge": "文件过大，请选择小于50MB的PDF文件"
   },
@@ -279,12 +279,12 @@
     "pdfLoadFailed": "无法加载 PDF 文件，请重试",
     "pdfParseFailed": "PDF 解析失败",
     "streamNotReadable": "无法读取生成数据流",
-    "generatingOutlines": "生成课程大纲",
-    "generatingOutlinesDesc": "正在构建学习路径...",
+    "generatingOutlines": "生成场景大纲",
+    "generatingOutlinesDesc": "正在构建路径细节...",
     "generatingSlideContent": "生成页面内容",
-    "generatingSlideContentDesc": "正在创建幻灯片、测验和互动内容...",
-    "generatingActions": "生成教学动作",
-    "generatingActionsDesc": "正在编排讲解、聚焦和互动流程...",
+    "generatingSlideContentDesc": "正在创建幻灯片和内容细节...",
+    "generatingActions": "生成行为动作",
+    "generatingActionsDesc": "正在编排讲解、聚焦和流程...",
     "generationComplete": "生成完成！",
     "generationFailed": "生成失败",
     "generatingCourse": "正在生成课程",
@@ -378,7 +378,7 @@
       "default-6": "思考者"
     },
     "agentRoles": {
-      "teacher": "教师",
+      "teacher": "讲解员",
       "assistant": "助教",
       "student": "学生"
     },
