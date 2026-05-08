@@ -606,13 +606,14 @@ export function Roundtable({
     onPlayPause,
   ]);
   const showPresentationDock =
-    !!controlsVisible ||
-    !!discussionRequest ||
-    isCueUser ||
-    isInputOpen ||
-    isVoiceOpen ||
-    isRecording ||
-    isProcessing;
+    !fullscreenContainerRef?.current &&
+    (!!controlsVisible ||
+      !!discussionRequest ||
+      isCueUser ||
+      isInputOpen ||
+      isVoiceOpen ||
+      isRecording ||
+      isProcessing);
   const toolbar = (
     <CanvasToolbar
       className="shrink-0 h-8 px-3 border-b border-gray-100/40 dark:border-gray-700/30"

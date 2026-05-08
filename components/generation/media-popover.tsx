@@ -3,8 +3,6 @@
 import { useState, useCallback, useMemo, useEffect, Fragment } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
-  Image as ImageIcon,
-  Video,
   Volume2,
   Mic,
   SlidersHorizontal,
@@ -30,11 +28,8 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useSettingsStore } from '@/lib/store/settings';
 import { useTTSPreview } from '@/lib/audio/use-tts-preview';
-import { IMAGE_PROVIDERS } from '@/lib/media/image-providers';
-import { VIDEO_PROVIDERS } from '@/lib/media/video-providers';
 import { TTS_PROVIDERS, getTTSVoices } from '@/lib/audio/constants';
 import { ASR_PROVIDERS, getASRSupportedLanguages } from '@/lib/audio/constants';
-import type { ImageProviderId, VideoProviderId } from '@/lib/media/types';
 import type { TTSProviderId, ASRProviderId } from '@/lib/audio/types';
 import type { SettingsSection } from '@/lib/types/settings';
 
@@ -57,7 +52,7 @@ const VIDEO_PROVIDER_ICONS: Record<string, string> = {
   'grok-video': '/logos/grok.svg',
 };
 
-type TabId = 'image' | 'video' | 'tts' | 'asr';
+type TabId = 'tts' | 'asr';
 
 const LANG_LABELS: Record<string, string> = {
   zh: '中文',
@@ -75,8 +70,6 @@ const LANG_LABELS: Record<string, string> = {
 };
 
 const TABS: Array<{ id: TabId; icon: LucideIcon; label: string }> = [
-  { id: 'image', icon: ImageIcon, label: 'Image' },
-  { id: 'video', icon: Video, label: 'Video' },
   { id: 'tts', icon: Volume2, label: 'TTS' },
   { id: 'asr', icon: Mic, label: 'ASR' },
 ];
@@ -108,30 +101,14 @@ function getVoiceDisplayName(name: string, lang: string): string {
 export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
   const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabId>('image');
+  const [activeTab, setActiveTab] = useState<TabId>('tts');
   const { previewing, startPreview, stopPreview } = useTTSPreview();
 
   // ─── Store ───
-  const imageGenerationEnabled = useSettingsStore((s) => s.imageGenerationEnabled);
-  const videoGenerationEnabled = useSettingsStore((s) => s.videoGenerationEnabled);
   const ttsEnabled = useSettingsStore((s) => s.ttsEnabled);
   const asrEnabled = useSettingsStore((s) => s.asrEnabled);
-  const setImageGenerationEnabled = useSettingsStore((s) => s.setImageGenerationEnabled);
-  const setVideoGenerationEnabled = useSettingsStore((s) => s.setVideoGenerationEnabled);
   const setTTSEnabled = useSettingsStore((s) => s.setTTSEnabled);
   const setASREnabled = useSettingsStore((s) => s.setASREnabled);
-
-  const imageProviderId = useSettingsStore((s) => s.imageProviderId);
-  const imageModelId = useSettingsStore((s) => s.imageModelId);
-  const imageProvidersConfig = useSettingsStore((s) => s.imageProvidersConfig);
-  const setImageProvider = useSettingsStore((s) => s.setImageProvider);
-  const setImageModelId = useSettingsStore((s) => s.setImageModelId);
-
-  const videoProviderId = useSettingsStore((s) => s.videoProviderId);
-  const videoModelId = useSettingsStore((s) => s.videoModelId);
-  const videoProvidersConfig = useSettingsStore((s) => s.videoProvidersConfig);
-  const setVideoProvider = useSettingsStore((s) => s.setVideoProvider);
-  const setVideoModelId = useSettingsStore((s) => s.setVideoModelId);
 
   const ttsProviderId = useSettingsStore((s) => s.ttsProviderId);
   const ttsVoice = useSettingsStore((s) => s.ttsVoice);
@@ -148,18 +125,11 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
   const setASRLanguage = useSettingsStore((s) => s.setASRLanguage);
 
   const enabledMap: Record<TabId, boolean> = {
-    image: imageGenerationEnabled,
-    video: videoGenerationEnabled,
     tts: ttsEnabled,
     asr: asrEnabled,
   };
 
-  const enabledCount = [
-    imageGenerationEnabled,
-    videoGenerationEnabled,
-    ttsEnabled,
-    asrEnabled,
-  ].filter(Boolean).length;
+  const enabledCount = [ttsEnabled, asrEnabled].filter(Boolean).length;
 
   const cfgOk = (
     configs: Record<string, { apiKey?: string; isServerConfigured?: boolean }>,
@@ -179,42 +149,8 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
     return () => window.speechSynthesis.removeEventListener('voiceschanged', load);
   }, []);
 
-  // ─── Grouped select data (only available providers) ───
-  const imageGroups = useMemo(
-    () =>
-      Object.values(IMAGE_PROVIDERS)
-        .filter((p) => cfgOk(imageProvidersConfig, p.id, p.requiresApiKey))
-        .map((p) => ({
-          groupId: p.id,
-          groupName: p.name,
-          groupIcon: IMAGE_PROVIDER_ICONS[p.id],
-          available: true,
-          items: [...p.models, ...(imageProvidersConfig[p.id]?.customModels || [])].map((m) => ({
-            id: m.id,
-            name: m.name,
-          })),
-        })),
-    [imageProvidersConfig],
-  );
-
-  const videoGroups = useMemo(
-    () =>
-      Object.values(VIDEO_PROVIDERS)
-        .filter((p) => cfgOk(videoProvidersConfig, p.id, p.requiresApiKey))
-        .map((p) => ({
-          groupId: p.id,
-          groupName: p.name,
-          groupIcon: VIDEO_PROVIDER_ICONS[p.id],
-          available: true,
-          items: [...p.models, ...(videoProvidersConfig[p.id]?.customModels || [])].map((m) => ({
-            id: m.id,
-            name: m.name,
-          })),
-        })),
-    [videoProvidersConfig],
-  );
-
-  // TTS: grouped by provider, voices as items (matching Image/Video pattern)
+    // ─── Grouped select data (only available providers) ───
+// TTS: grouped by provider, voices as items (matching Image/Video pattern)
   // Browser-native voices are split into sub-groups by language.
   const ttsGroups = useMemo(() => {
     const groups: SelectGroupData[] = [];
@@ -318,8 +254,8 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
     }
     setOpen(isOpen);
     if (isOpen) {
-      const first = (['image', 'video', 'tts', 'asr'] as TabId[]).find((id) => enabledMap[id]);
-      setActiveTab(first || 'image');
+      const first = (['tts', 'asr'] as TabId[]).find((id) => enabledMap[id]);
+      setActiveTab(first || 'tts');
     }
   };
 
@@ -335,8 +271,6 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
           )}
         >
           <SlidersHorizontal className="size-3.5" />
-          {imageGenerationEnabled && <ImageIcon className="size-3.5" />}
-          {videoGenerationEnabled && <Video className="size-3.5" />}
           {ttsEnabled && <Volume2 className="size-3.5" />}
           {asrEnabled && <Mic className="size-3.5" />}
         </button>
@@ -374,44 +308,6 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
 
         {/* ── Tab content ── */}
         <div className="p-3 pt-2.5">
-          {activeTab === 'image' && (
-            <TabPanel
-              icon={ImageIcon}
-              label={t('media.imageCapability')}
-              enabled={imageGenerationEnabled}
-              onToggle={setImageGenerationEnabled}
-            >
-              <GroupedSelect
-                groups={imageGroups}
-                selectedGroupId={imageProviderId}
-                selectedItemId={imageModelId}
-                onSelect={(gid, iid) => {
-                  setImageProvider(gid as ImageProviderId);
-                  setImageModelId(iid);
-                }}
-              />
-            </TabPanel>
-          )}
-
-          {activeTab === 'video' && (
-            <TabPanel
-              icon={Video}
-              label={t('media.videoCapability')}
-              enabled={videoGenerationEnabled}
-              onToggle={setVideoGenerationEnabled}
-            >
-              <GroupedSelect
-                groups={videoGroups}
-                selectedGroupId={videoProviderId}
-                selectedItemId={videoModelId}
-                onSelect={(gid, iid) => {
-                  setVideoProvider(gid as VideoProviderId);
-                  setVideoModelId(iid);
-                }}
-              />
-            </TabPanel>
-          )}
-
           {activeTab === 'tts' && (
             <TabPanel
               icon={Volume2}

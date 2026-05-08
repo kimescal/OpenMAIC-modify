@@ -131,21 +131,11 @@ export async function generateSceneOutlinesFromRequirements(
     requirements.userNickname || requirements.userBio
       ? `## Student Profile\n\nStudent: ${requirements.userNickname || 'Unknown'}${requirements.userBio ? ` — ${requirements.userBio}` : ''}\n\nConsider this student's background when designing the course. Adapt difficulty, examples, and teaching approach accordingly.\n\n---`
       : '';
-
-  // Build media generation policy based on enabled flags
-  const imageEnabled = options?.imageGenerationEnabled ?? false;
-  const videoEnabled = options?.videoGenerationEnabled ?? false;
-  let mediaGenerationPolicy = '';
-  if (!imageEnabled && !videoEnabled) {
-    mediaGenerationPolicy =
-      '**IMPORTANT: Do NOT include any mediaGenerations in the outlines. Both image and video generation are disabled.**';
-  } else if (!imageEnabled) {
-    mediaGenerationPolicy =
-      '**IMPORTANT: Do NOT include any image mediaGenerations (type: "image") in the outlines. Image generation is disabled. Video generation is allowed.**';
-  } else if (!videoEnabled) {
-    mediaGenerationPolicy =
-      '**IMPORTANT: Do NOT include any video mediaGenerations (type: "video") in the outlines. Video generation is disabled. Image generation is allowed.**';
-  }
+	  
+  // Temporary policy for text-only deployments (Qwen LLM only):
+  // always avoid image/video generation tasks in outlines.
+  const mediaGenerationPolicy =
+    '**IMPORTANT: Do NOT include any mediaGenerations in the outlines. Use text-only teaching content and textual suggestions for visuals instead.**';
 
   // Use simplified prompt variables
   const prompts = buildPrompt(PROMPT_IDS.REQUIREMENTS_TO_OUTLINES, {

@@ -818,7 +818,7 @@
     "videoGenerationWarning": "视频生成通常需要1-2分钟，请耐心等待",
     "mediaRetry": "重试",
     "mediaContentSensitive": "抱歉，该内容触发了安全检查",
-    "mediaGenerationDisabled": "已在设置中关闭生成",
+    "mediaGenerationDisabled": "当前环境仅支持文本模型（Qwen），已改为文本建议模式",
     "singleAgent": "单智能体模式",
     "multiAgent": "多智能体模式",
     "selectAgents": "选择智能体",
