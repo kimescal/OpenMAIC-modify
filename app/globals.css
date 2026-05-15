@@ -136,6 +136,19 @@
     default !important;
 }
 
+/* Static slide text reset:
+ * Generated HTML uses <p> tags. Browser default paragraph margins can cause
+ * visible offset/clipping in fixed-height boxes. Reset and control spacing via
+ * --paragraphSpace to keep text baseline stable across slides.
+ */
+.ProseMirror-static p {
+  margin: 0;
+}
+
+.ProseMirror-static p + p {
+  margin-top: var(--paragraphSpace, 5px);
+}
+
 /* Animation for audio visualizer */
 @keyframes wave {
   0%,

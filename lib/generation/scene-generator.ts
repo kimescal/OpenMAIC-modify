@@ -483,6 +483,65 @@ function sanitizeQuestionStyleText(elements: PPTElement[]): PPTElement[] {
 /**
  * Clamp element boxes into canvas safe area to avoid overflow outside slide viewport.
  */
+ 
+
+function estimateTextLines(content: string, width: number, fontSize: number): number {
+  const plain = content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  if (!plain) return 1;
+  const cjkChars = (plain.match(/[一-鿿]/g) || []).length;
+  const latinChars = Math.max(0, plain.length - cjkChars);
+  const visualLength = cjkChars + latinChars * 0.55;
+  const approxCharsPerLine = Math.max(6, Math.floor(width / Math.max(8, fontSize * 0.62)));
+  return Math.max(1, Math.ceil(visualLength / approxCharsPerLine));
+}
+
+/**
+ * Heuristic text fitting to reduce overflow/clipping in generated slides.
+ */
+function normalizeTextElementsForFit(elements: PPTElement[]): PPTElement[] {
+  return elements.map((el) => {
+    if (el.type !== 'text') return el;
+    const width = Math.max(1, typeof el.width === 'number' ? el.width : 1);
+    const height = Math.max(1, typeof el.height === 'number' ? el.height : 1);
+    const currentLineHeight = typeof el.lineHeight === 'number' ? el.lineHeight : 1.35;
+    const content = typeof el.content === 'string' ? el.content : '';
+
+    const fontSizes = [28, 26, 24, 22, 20, 18, 16, 15, 14, 13, 12];
+    let fitted = fontSizes[0];
+
+    for (const fs of fontSizes) {
+      const lines = estimateTextLines(content, width, fs);
+      const neededHeight = lines * fs * currentLineHeight + 8;
+      if (neededHeight <= height) {
+        fitted = fs;
+        break;
+      }
+      fitted = fs;
+    }
+
+    let nextContent = content;
+    // Normalize long separators that often produce visual overflow in CJK slides
+    nextContent = nextContent.replace(/[—–]{2,}/g, '，');
+
+    // Avoid forcing larger inline font sizes than fitted size
+    nextContent = nextContent.replace(/font-size\s*:\s*([\d.]+)px/gi, (_m, size) => {
+      const n = Number(size);
+      if (!Number.isFinite(n)) return `font-size: ${fitted}px`;
+      return `font-size: ${Math.min(n, fitted)}px`;
+    });
+
+    return {
+      ...el,
+      lineHeight: currentLineHeight,
+      content: nextContent,
+      defaultFontName: el.defaultFontName || 'Inter',
+      // @ts-expect-error - generated content may include this optional field at runtime
+      defaultFontSize: fitted,
+      paragraphSpace: typeof el.paragraphSpace === 'number' ? el.paragraphSpace : 3,
+    } as PPTElement;
+  });
+} 
+ 
 function clampElementsToCanvas(
   elements: PPTElement[],
   canvasWidth: number,
@@ -493,7 +552,6 @@ function clampElementsToCanvas(
   const maxBottom = canvasHeight - margin;
 
   return elements.map((el) => {
-    if (el.type === 'line') return el;
 
     const box = el as unknown as Record<string, unknown>;
     const left = typeof el.left === 'number' ? el.left : 0;
@@ -669,7 +727,8 @@ async function generateSlideContent(
     rotate: 0,
   })) as PPTElement[];
   const normalizedElements = sanitizeQuestionStyleText(processedElements);
-  const boundedElements = clampElementsToCanvas(normalizedElements, canvasWidth, canvasHeight);
+  const textFittedElements = normalizeTextElementsForFit(normalizedElements);
+  const boundedElements = clampElementsToCanvas(textFittedElements, canvasWidth, canvasHeight);
 
   // Process background
   let background: SlideBackground | undefined;
